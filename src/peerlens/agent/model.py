@@ -27,6 +27,24 @@ class ModelError(RuntimeError):
     pass
 
 
+def _retry_delay(response, default: float = 20.0) -> float:
+    """Best-effort parse of a server-suggested retry delay (seconds)."""
+    import re
+
+    try:
+        body = response.json()
+        for d in body.get("error", {}).get("details", []):
+            if d.get("@type", "").endswith("RetryInfo") and "retryDelay" in d:
+                return float(str(d["retryDelay"]).rstrip("s"))
+        msg = body.get("error", {}).get("message", "")
+        m = re.search(r"retry in ([\d.]+)s", msg)
+        if m:
+            return float(m.group(1))
+    except Exception:
+        pass
+    return default
+
+
 def build_prompt(question: str, linked: LinkedCatalog) -> str:
     """Schema-linked instruction: extract a grounded query plan as JSON."""
     metrics = ", ".join(m.key for m in linked.metrics)
@@ -80,18 +98,34 @@ class GeminiPlanModel:
 
     _BASE = "https://generativelanguage.googleapis.com/v1beta/models"
 
-    def __init__(self, api_key: str, model: str = "gemini-2.0-flash", timeout: float = 30.0):
+    def __init__(
+        self,
+        api_key: str,
+        model: str = "gemini-2.5-flash",
+        timeout: float = 30.0,
+        client=None,
+        *,
+        max_retries: int = 2,
+        sleep=None,
+    ):
         if not api_key:
             raise ModelError("GEMINI_API_KEY is not set — cannot use the Gemini provider.")
+        import time
+
         import httpx
 
         self._api_key = api_key
         self._model = model
-        self._client = httpx.Client(timeout=timeout)
+        self._client = client or httpx.Client(timeout=timeout)
+        self._max_retries = max_retries
+        self._sleep = sleep or time.sleep
 
     def propose(
         self, question: str, linked: LinkedCatalog, *, temperature: float
     ) -> QueryPlan | None:
+        """Return a plan, None for an unparseable sample (a dropped vote), or
+        raise ModelError on an API/transport failure (an operational error to
+        surface — never silently abstain on a quota or auth problem)."""
         import httpx
 
         url = f"{self._BASE}/{self._model}:generateContent"
@@ -102,17 +136,34 @@ class GeminiPlanModel:
                 "responseMimeType": "application/json",
             },
         }
+        resp = None
+        for attempt in range(self._max_retries + 1):
+            try:
+                resp = self._client.post(url, headers={"x-goog-api-key": self._api_key}, json=body)
+                resp.raise_for_status()
+                break
+            except httpx.HTTPStatusError as e:
+                status = e.response.status_code
+                # 429/503 are transient (rate limit / overload) — back off and retry.
+                if status in (429, 503) and attempt < self._max_retries:
+                    self._sleep(min(_retry_delay(e.response), 32.0))
+                    continue
+                detail = ""
+                try:
+                    detail = e.response.json().get("error", {}).get("message", "")
+                except Exception:
+                    detail = e.response.text[:200]
+                raise ModelError(f"Gemini API error {status}: {detail}") from e
+            except httpx.RequestError as e:
+                raise ModelError(f"Gemini request failed: {e}") from e
+
         try:
-            resp = self._client.post(
-                url, headers={"x-goog-api-key": self._api_key}, json=body
-            )
-            resp.raise_for_status()
             text = resp.json()["candidates"][0]["content"]["parts"][0]["text"].strip()
-        except (httpx.HTTPError, KeyError, IndexError):
-            return None
+        except (KeyError, IndexError, ValueError):
+            return None  # no usable content (e.g. safety block) — a dropped vote
         try:
             return QueryPlan.model_validate_json(text)
-        except Exception:  # malformed sample — a dropped vote, not a crash
+        except Exception:  # malformed JSON sample — a dropped vote, not a crash
             return None
 
 
@@ -123,7 +174,7 @@ def get_plan_model(settings=None) -> PlanModel:
     s = settings or get_settings()
     provider = s.peerlens_model_provider.lower()
     if provider == "gemini":
-        return GeminiPlanModel(s.gemini_api_key, getattr(s, "gemini_model", "gemini-2.0-flash"))
+        return GeminiPlanModel(s.gemini_api_key, getattr(s, "gemini_model", "gemini-2.5-flash"))
     raise ModelError(
         f"provider '{provider}' is not wired yet; implement a PlanModel for it "
         "(the pipeline is provider-agnostic)."

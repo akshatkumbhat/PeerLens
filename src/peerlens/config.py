@@ -33,7 +33,9 @@ class Settings(BaseSettings):
     # Model provider (Phase 3): gemini | ollama | claude
     peerlens_model_provider: str = "gemini"
     gemini_api_key: str = ""
-    gemini_model: str = "gemini-2.0-flash"
+    # gemini-2.5-flash is broadly free-tier eligible; some keys have 0 quota on
+    # the 2.0-flash family. Override with GEMINI_MODEL in .env.
+    gemini_model: str = "gemini-2.5-flash"
     anthropic_api_key: str = ""
 
     # Self-consistency / abstention defaults (Phase 3; tau tuned in Phase 4)

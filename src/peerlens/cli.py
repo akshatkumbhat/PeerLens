@@ -82,6 +82,9 @@ def _cmd_ask(args: argparse.Namespace) -> int:
     con = db.connect(read_only=True)
     try:
         resp = run_agent(con, model, args.question)
+    except ModelError as e:
+        print(f"Model error: {e}")
+        return 1
     finally:
         con.close()
 
