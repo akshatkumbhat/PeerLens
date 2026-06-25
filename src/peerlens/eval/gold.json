@@ -1,0 +1,27 @@
+{
+  "_about": "Labeled evaluation set. 'answerable' questions have a gold institution+metric resolved directly from the warehouse; 'unanswerable' questions must abstain/clarify. Institution phrasings are chosen to resolve via the strict resolver (alias/abbreviation resolution is documented future work).",
+  "answerable": [
+    {"id": "a01", "question": "What was the admit rate at the University of California-Los Angeles in 2020?", "institution": "University of California-Los Angeles", "metric": "admit_rate"},
+    {"id": "a02", "question": "What is the first-time full-time retention rate at the University of Virginia?", "institution": "University of Virginia-Main Campus", "metric": "retention_rate"},
+    {"id": "a03", "question": "How many applicants did Pennsylvania State University receive?", "institution": "Pennsylvania State University", "metric": "applied"},
+    {"id": "a04", "question": "What was the yield rate at the Georgia Institute of Technology?", "institution": "Georgia Institute of Technology-Main Campus", "metric": "yield_rate"},
+    {"id": "a05", "question": "What was the retention rate at the University of Florida?", "institution": "University of Florida", "metric": "retention_rate"},
+    {"id": "a06", "question": "What was the admit rate at the University of North Carolina at Chapel Hill?", "institution": "University of North Carolina at Chapel Hill", "metric": "admit_rate"},
+    {"id": "a07", "question": "How many students enrolled at the University of California-Berkeley?", "institution": "University of California-Berkeley", "metric": "enrolled"},
+    {"id": "a08", "question": "What was the admit rate at the University of California-San Diego?", "institution": "University of California-San Diego", "metric": "admit_rate"},
+    {"id": "a09", "question": "What is the retention rate at the University of Maryland-College Park?", "institution": "University of Maryland-College Park", "metric": "retention_rate"},
+    {"id": "a10", "question": "How does the University of Virginia's retention rate compare to its peers?", "institution": "University of Virginia-Main Campus", "metric": "retention_rate", "intent": "compare"},
+    {"id": "a11", "question": "What was the yield rate at the University of Florida?", "institution": "University of Florida", "metric": "yield_rate"},
+    {"id": "a12", "question": "How many applicants did the University of California-Irvine receive in 2020?", "institution": "University of California-Irvine", "metric": "applied"}
+  ],
+  "unanswerable": [
+    {"id": "u01", "question": "What is the retention rate at Hogwarts University?", "expected_reason": "unknown_institution"},
+    {"id": "u02", "question": "What is the admit rate at the University of California?", "expected_reason": "ambiguous_institution"},
+    {"id": "u03", "question": "What is the graduation rate at the University of Florida?", "expected_reason": "out_of_scope"},
+    {"id": "u04", "question": "What was the admit rate at the University of Virginia in 2025?", "expected_reason": "out_of_scope"},
+    {"id": "u05", "question": "What is the average SAT score at the University of California-Los Angeles?", "expected_reason": "out_of_scope"},
+    {"id": "u06", "question": "What is the endowment of Pennsylvania State University?", "expected_reason": "out_of_scope"},
+    {"id": "u07", "question": "Tell me a joke about college admissions.", "expected_reason": "out_of_scope"},
+    {"id": "u08", "question": "What is the tuition at the University of Michigan?", "expected_reason": "out_of_scope"}
+  ]
+}

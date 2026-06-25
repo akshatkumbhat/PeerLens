@@ -31,15 +31,26 @@ def _retry_delay(response, default: float = 20.0) -> float:
     """Best-effort parse of a server-suggested retry delay (seconds)."""
     import re
 
+    def _to_seconds(raw: str) -> float | None:
+        m = re.search(r"([\d.]+)\s*(ms|s)?", raw)
+        if not m:
+            return None
+        val = float(m.group(1))
+        return val / 1000.0 if m.group(2) == "ms" else val
+
     try:
         body = response.json()
         for d in body.get("error", {}).get("details", []):
             if d.get("@type", "").endswith("RetryInfo") and "retryDelay" in d:
-                return float(str(d["retryDelay"]).rstrip("s"))
+                secs = _to_seconds(str(d["retryDelay"]))
+                if secs is not None:
+                    return secs
         msg = body.get("error", {}).get("message", "")
-        m = re.search(r"retry in ([\d.]+)s", msg)
+        m = re.search(r"retry in ([\d.]+\s*(?:ms|s))", msg)
         if m:
-            return float(m.group(1))
+            secs = _to_seconds(m.group(1))
+            if secs is not None:
+                return secs
     except Exception:
         pass
     return default
@@ -105,7 +116,7 @@ class GeminiPlanModel:
         timeout: float = 30.0,
         client=None,
         *,
-        max_retries: int = 2,
+        max_retries: int = 4,
         sleep=None,
     ):
         if not api_key:

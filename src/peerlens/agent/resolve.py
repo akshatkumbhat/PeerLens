@@ -69,6 +69,14 @@ def _suggestions(index: list[_Inst], query: str, k: int = 5) -> list[str]:
     return [i.name for i in scored[:k] if qtok & i.tokens]
 
 
+def resolve_institution(con: duckdb.DuckDBPyConnection, name: str) -> list[int]:
+    """Return the unitid(s) a name resolves to (0 = unknown, >1 = ambiguous).
+
+    Public helper reused by the eval harness to compute gold institution ids.
+    """
+    return [m.unitid for m in _match(_load_index(con), name)]
+
+
 def resolve_plan(con: duckdb.DuckDBPyConnection, plan: QueryPlan) -> ResolvedPlan | Abstention:
     """Ground a plan against the warehouse, or abstain with a precise reason."""
     index = _load_index(con)

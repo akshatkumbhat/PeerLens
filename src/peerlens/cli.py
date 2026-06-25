@@ -104,6 +104,62 @@ def _cmd_ask(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_eval(args: argparse.Namespace) -> int:
+    from peerlens.eval.harness import load_records, run_eval, save_records
+    from peerlens.eval.metrics import metrics_at
+    from peerlens.eval.report import update_readme, write_report
+
+    out_dir = config.REPO_ROOT / "docs" / "eval"
+    records_path = out_dir / "records.json"
+    s = config.get_settings()
+    updates = {}
+    if args.samples:
+        updates["agent_samples"] = args.samples
+    if args.model:
+        updates["gemini_model"] = args.model
+    if updates:
+        s = s.model_copy(update=updates)
+
+    if args.from_cache:
+        if not records_path.exists():
+            print(f"No cached records at {records_path}; run without --from-cache first.")
+            return 1
+        records = load_records(records_path)
+        print(f"Loaded {len(records)} cached records.")
+    else:
+        from peerlens.agent.model import ModelError, get_plan_model
+        from peerlens.warehouse import db
+
+        try:
+            model = get_plan_model(s)
+        except ModelError as e:
+            print(f"Cannot run eval: {e}")
+            return 1
+        con = db.connect(read_only=True)
+        try:
+            print(f"Running eval (model={s.gemini_model}, samples={s.agent_samples})…")
+            records = run_eval(con, model, s, limit=args.limit, pause=args.pause)
+        finally:
+            con.close()
+        if not records:
+            print("No records collected (API unavailable?). Nothing written.")
+            return 1
+        save_records(records, records_path)
+        print(f"Saved {len(records)} records -> {records_path.relative_to(config.REPO_ROOT)}")
+
+    op = write_report(records, out_dir, s.agent_tau)
+    at_default = metrics_at(records, s.agent_tau)
+    print(f"\nOperating point: τ={op.tau:.2f}  coverage={op.coverage:.0%}  "
+          f"confident-wrong={op.confident_wrong_rate:.1%}  EX={op.execution_accuracy:.0%}")
+    print(f"At default τ={s.agent_tau:.2f}: coverage={at_default.coverage:.0%}  "
+          f"confident-wrong={at_default.confident_wrong_rate:.1%}")
+    if args.update_readme:
+        from peerlens.eval.report import render_markdown
+        ok = update_readme(config.REPO_ROOT / "README.md", render_markdown(records, op, s.agent_tau))
+        print("README updated." if ok else "README has no EVAL markers — skipped.")
+    return 0
+
+
 def _cmd_app(_args: argparse.Namespace) -> int:
     import subprocess
     import sys
@@ -151,6 +207,15 @@ def main() -> int:
     p_ask = sub.add_parser("ask", help="ask the grounded agent a question (needs GEMINI_API_KEY)")
     p_ask.add_argument("question", help="natural-language question")
     p_ask.set_defaults(func=_cmd_ask)
+
+    p_eval = sub.add_parser("eval", help="run the evaluation harness and write the report")
+    p_eval.add_argument("--samples", type=int, default=None, help="override agent_samples for the eval")
+    p_eval.add_argument("--model", type=str, default=None, help="override Gemini model (e.g. gemini-2.5-flash-lite)")
+    p_eval.add_argument("--pause", type=float, default=0.0, help="seconds to wait between questions")
+    p_eval.add_argument("--limit", type=int, default=None, help="limit questions per set")
+    p_eval.add_argument("--from-cache", action="store_true", help="recompute from cached records.json")
+    p_eval.add_argument("--update-readme", action="store_true", help="write metrics into README markers")
+    p_eval.set_defaults(func=_cmd_eval)
 
     p_app = sub.add_parser("app", help="launch the Streamlit page")
     p_app.set_defaults(func=_cmd_app)
