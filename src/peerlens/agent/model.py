@@ -157,7 +157,9 @@ class GeminiPlanModel:
                 status = e.response.status_code
                 # 429/503 are transient (rate limit / overload) — back off and retry.
                 if status in (429, 503) and attempt < self._max_retries:
-                    self._sleep(min(_retry_delay(e.response), 32.0))
+                    # Honor the server's hint up to 65s — a per-minute quota reset
+                    # needs ~60s, so a shorter cap retries into a still-closed window.
+                    self._sleep(min(_retry_delay(e.response), 65.0))
                     continue
                 detail = ""
                 try:
