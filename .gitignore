@@ -1,0 +1,22 @@
+# Environment
+.env
+.venv/
+__pycache__/
+*.py[cod]
+.python-version
+
+# Data — cached pulls and the built warehouse are reproducible, not committed
+data/raw/*
+data/warehouse/*
+!data/raw/.gitkeep
+!data/warehouse/.gitkeep
+
+# Tooling
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+*.egg-info/
+dist/
+build/
+.DS_Store
