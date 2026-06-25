@@ -10,7 +10,9 @@ guessing.**
 The headline metric is not accuracy alone — it is the rate of *confident-and-wrong*
 answers, driven toward zero.
 
-> Status: **Phase 1 (scaffold)** — see [Build order](#build-order).
+> Status: **Phase 2 complete** — Mahalanobis peers, retention cohorts, and the
+> data-quality gate are in. See [Build order](#build-order) and
+> [docs/methodology.md](docs/methodology.md).
 
 ## Architecture (target)
 
@@ -50,9 +52,10 @@ over-abstention, and the risk-coverage curve._
 
 ## Build order
 
-- **Phase 1** — Ingest one IPEDS year → DuckDB dims + one fact table → one templated
-  comparison query → minimal page. Runnable end to end. _(current)_
-- **Phase 2** — Mahalanobis peer/aspirant sets, retention cohorts, data-quality layer.
+- **Phase 1** ✅ — Ingest one IPEDS year → DuckDB dims + facts → templated comparison
+  query → minimal page. Runnable end to end.
+- **Phase 2** ✅ — Mahalanobis peer/aspirant sets (`bridge_peer_set`), retention
+  cohorts, and a data-quality gate that fails the build on violations.
 - **Phase 3** — The agent (plan contract, schema linking, templates, self-consistency,
   abstention, number injection).
 - **Phase 4** — Evaluation harness + CI, Streamlit polish, README with risk-coverage
@@ -63,6 +66,9 @@ over-abstention, and the risk-coverage curve._
 ```sh
 uv sync                 # create venv + install deps (Python 3.11+)
 cp .env.example .env    # fill in keys as needed (IPEDS needs none)
+make pipeline           # ingest -> build (with DQ gate) -> Mahalanobis peers
+make app                # launch the Streamlit page
+make test               # 19 tests
 ```
 
 ## Tech stack

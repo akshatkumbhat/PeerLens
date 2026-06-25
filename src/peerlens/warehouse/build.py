@@ -185,6 +185,12 @@ def build_warehouse(
                   "_cand_institution", "_adm_total", "_ret_ft", "_cohort"):
             con.execute(f"DROP TABLE IF EXISTS {t}")
 
+        # Data-quality gate — raises DataQualityError on any error-severity violation,
+        # so a malformed warehouse never reaches the agent or the page.
+        from peerlens.quality.checks import assert_quality
+
+        assert_quality(con)
+
         tables = ["dim_year", "dim_institution", "fact_admissions_funnel", "fact_retention"]
         counts = {t: con.execute(f"SELECT COUNT(*) FROM {t}").fetchone()[0] for t in tables}
         return counts

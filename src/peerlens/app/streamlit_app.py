@@ -10,6 +10,7 @@ from __future__ import annotations
 import polars as pl
 import streamlit as st
 
+from peerlens.peers.build import peers_for
 from peerlens.warehouse import db, queries
 
 st.set_page_config(page_title="PeerLens", layout="wide")
@@ -23,6 +24,18 @@ def _connect():
 @st.cache_data
 def _institutions() -> pl.DataFrame:
     return queries.list_institutions(_connect())
+
+
+def _has_bridge() -> bool:
+    rows = _connect().execute(
+        "SELECT 1 FROM information_schema.tables WHERE table_name = 'bridge_peer_set'"
+    ).fetchall()
+    return bool(rows)
+
+
+def _neighbor_ids(target_unitid: int, set_type: str, limit: int = 8) -> list[int]:
+    df = peers_for(_connect(), target_unitid, set_type, limit=limit)
+    return df["unitid"].to_list() if df.height else []
 
 
 def main() -> None:
@@ -55,7 +68,23 @@ def main() -> None:
             format_func=lambda k: queries.METRICS[k][2],
         )
 
-        default_peers = [n for n in names if n != target_label][:5]
+        id_to_label = {v: k for k, v in labels.items()}
+        options = ["Manual"]
+        if _has_bridge():
+            options = ["Mahalanobis peers", "Aspirants", "Manual"]
+        comparison_set = st.radio("Comparison set", options, index=0)
+
+        if comparison_set == "Mahalanobis peers":
+            seed_ids = _neighbor_ids(target_unitid, "peer")
+        elif comparison_set == "Aspirants":
+            seed_ids = _neighbor_ids(target_unitid, "aspirant")
+        else:
+            seed_ids = [labels[n] for n in names if n != target_label][:5]
+
+        default_peers = [id_to_label[i] for i in seed_ids if i in id_to_label]
+        if comparison_set == "Aspirants" and not default_peers:
+            st.caption("No aspirants — this institution is already in the most-selective band.")
+
         peer_labels = st.multiselect(
             "Peer institutions",
             [n for n in names if n != target_label],

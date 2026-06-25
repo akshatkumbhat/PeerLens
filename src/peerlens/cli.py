@@ -35,6 +35,38 @@ def _cmd_build(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_peers(args: argparse.Namespace) -> int:
+    from peerlens.peers.build import build_peer_sets
+
+    summary = build_peer_sets(k=args.k, n_bands=args.n_bands)
+    print("Built bridge_peer_set:")
+    print(f"  targets:        {summary['n_targets']}")
+    print(f"  peer rows:      {summary['peer_rows']:,}")
+    print(f"  aspirant rows:  {summary['aspirant_rows']:,}")
+    print(f"  k={summary['k']}  bands={summary['n_bands']}  "
+          f"diagonal_fallback={summary['used_diagonal_fallback']}")
+    return 0
+
+
+def _cmd_validate(_args: argparse.Namespace) -> int:
+    from peerlens.quality.checks import run_checks
+    from peerlens.warehouse import db
+
+    con = db.connect(read_only=True)
+    try:
+        results = run_checks(con)
+    finally:
+        con.close()
+    print("Data-quality checks:")
+    failed = 0
+    for r in results:
+        mark = "ok  " if r.passed else "FAIL"
+        if not r.passed:
+            failed += 1
+        print(f"  [{mark}] {r.name:36} {r.n_violations} violation(s)")
+    return 1 if failed else 0
+
+
 def _cmd_app(_args: argparse.Namespace) -> int:
     import subprocess
     import sys
@@ -70,6 +102,14 @@ def main() -> int:
     p_build.add_argument("--year", type=int, default=None, help="IPEDS year (default: settings)")
     p_build.add_argument("--cohort-size", type=int, default=200, help="institutions in the cohort")
     p_build.set_defaults(func=_cmd_build)
+
+    p_peers = sub.add_parser("peers", help="build Mahalanobis peer/aspirant sets")
+    p_peers.add_argument("--k", type=int, default=10, help="neighbors per set")
+    p_peers.add_argument("--n-bands", type=int, default=5, help="selectivity bands")
+    p_peers.set_defaults(func=_cmd_peers)
+
+    p_validate = sub.add_parser("validate", help="run data-quality checks on the warehouse")
+    p_validate.set_defaults(func=_cmd_validate)
 
     p_app = sub.add_parser("app", help="launch the Streamlit page")
     p_app.set_defaults(func=_cmd_app)

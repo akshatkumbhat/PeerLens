@@ -1,4 +1,4 @@
-.PHONY: setup ingest build pipeline test app clean
+.PHONY: setup ingest build peers validate pipeline test app clean
 
 setup:        ## install deps into the venv
 	uv sync --extra dev
@@ -9,8 +9,14 @@ ingest:       ## pull Phase 1 IPEDS topics to parquet
 build:        ## build the DuckDB warehouse from cached parquet
 	uv run peerlens build
 
-pipeline:     ## ingest -> build (full Phase 1 data pipeline)
-	uv run peerlens ingest && uv run peerlens build
+peers:        ## build Mahalanobis peer/aspirant sets (bridge_peer_set)
+	uv run peerlens peers
+
+validate:     ## run data-quality checks on the warehouse
+	uv run peerlens validate
+
+pipeline:     ## ingest -> build -> peers (full data pipeline through Phase 2)
+	uv run peerlens ingest && uv run peerlens build && uv run peerlens peers
 
 test:         ## run the test suite
 	uv run pytest -q
