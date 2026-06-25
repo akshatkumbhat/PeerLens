@@ -33,7 +33,14 @@ class Settings(BaseSettings):
     # Model provider (Phase 3): gemini | ollama | claude
     peerlens_model_provider: str = "gemini"
     gemini_api_key: str = ""
+    gemini_model: str = "gemini-2.0-flash"
     anthropic_api_key: str = ""
+
+    # Self-consistency / abstention defaults (Phase 3; tau tuned in Phase 4)
+    agent_samples: int = 5
+    agent_temperature: float = 0.7
+    agent_tau: float = 0.6
+    agent_max_retries: int = 2
 
     # Thin-slice scope (Phase 1). 2020 is the most recent IPEDS year for which
     # the Urban API has retention data (2021+ return zero rows), so all three

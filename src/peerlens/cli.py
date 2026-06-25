@@ -67,6 +67,40 @@ def _cmd_validate(_args: argparse.Namespace) -> int:
     return 1 if failed else 0
 
 
+def _cmd_ask(args: argparse.Namespace) -> int:
+    from peerlens.agent.model import ModelError, get_plan_model
+    from peerlens.agent.pipeline import run_agent
+    from peerlens.warehouse import db
+
+    try:
+        model = get_plan_model()
+    except ModelError as e:
+        print(f"Cannot run the agent: {e}")
+        print("Set GEMINI_API_KEY in .env (free key: https://aistudio.google.com/apikey).")
+        return 1
+
+    con = db.connect(read_only=True)
+    try:
+        resp = run_agent(con, model, args.question)
+    finally:
+        con.close()
+
+    print(f"Q: {resp.question}\n")
+    if resp.answered:
+        print(resp.answer)
+        rp = resp.resolved_plan
+        print(f"\n  confidence: {resp.agreement:.0%} agreement over {resp.n_samples} samples")
+        print(f"  plan:       {rp.intent.value} · {rp.metric} · {rp.target_name}")
+        print(f"  sql:        {resp.sql}")
+    else:
+        ab = resp.abstention
+        print(f"[abstained — {ab.reason.value}] {ab.message}")
+        if ab.options:
+            print("  options:", ", ".join(ab.options[:6]))
+        print(f"  agreement:  {resp.agreement:.0%} over {resp.n_samples} samples")
+    return 0
+
+
 def _cmd_app(_args: argparse.Namespace) -> int:
     import subprocess
     import sys
@@ -110,6 +144,10 @@ def main() -> int:
 
     p_validate = sub.add_parser("validate", help="run data-quality checks on the warehouse")
     p_validate.set_defaults(func=_cmd_validate)
+
+    p_ask = sub.add_parser("ask", help="ask the grounded agent a question (needs GEMINI_API_KEY)")
+    p_ask.add_argument("question", help="natural-language question")
+    p_ask.set_defaults(func=_cmd_ask)
 
     p_app = sub.add_parser("app", help="launch the Streamlit page")
     p_app.set_defaults(func=_cmd_app)

@@ -10,9 +10,10 @@ guessing.**
 The headline metric is not accuracy alone — it is the rate of *confident-and-wrong*
 answers, driven toward zero.
 
-> Status: **Phase 2 complete** — Mahalanobis peers, retention cohorts, and the
-> data-quality gate are in. See [Build order](#build-order) and
-> [docs/methodology.md](docs/methodology.md).
+> Status: **Phase 3 complete** — the correct-or-silent agent is in (plan
+> contract, schema linking, template-first SQL, self-consistency, abstention,
+> programmatic number injection). See [docs/agent.md](docs/agent.md) and
+> [docs/methodology.md](docs/methodology.md). Next: Phase 4 eval harness + CI.
 
 ## Architecture (target)
 
@@ -56,8 +57,9 @@ over-abstention, and the risk-coverage curve._
   query → minimal page. Runnable end to end.
 - **Phase 2** ✅ — Mahalanobis peer/aspirant sets (`bridge_peer_set`), retention
   cohorts, and a data-quality gate that fails the build on violations.
-- **Phase 3** — The agent (plan contract, schema linking, templates, self-consistency,
-  abstention, number injection).
+- **Phase 3** ✅ — The agent: plan contract, schema linking, template-first SQL,
+  execution, N-sample self-consistency, the correct-or-silent decision, and
+  programmatic number injection. Gemini provider (REST); fully tested offline.
 - **Phase 4** — Evaluation harness + CI, Streamlit polish, README with risk-coverage
   plot and the MARKETview-stack mapping.
 
@@ -65,10 +67,13 @@ over-abstention, and the risk-coverage curve._
 
 ```sh
 uv sync                 # create venv + install deps (Python 3.11+)
-cp .env.example .env    # fill in keys as needed (IPEDS needs none)
+cp .env.example .env    # IPEDS needs none; set GEMINI_API_KEY to use the agent
 make pipeline           # ingest -> build (with DQ gate) -> Mahalanobis peers
-make app                # launch the Streamlit page
-make test               # 19 tests
+make test               # 36 tests (agent fully tested offline, no key needed)
+
+# the agent (needs GEMINI_API_KEY; free key at https://aistudio.google.com/apikey)
+uv run peerlens ask "How does UVA's retention compare to its peers?"
+make app                # Streamlit page with the Ask panel + comparison tool
 ```
 
 ## Tech stack

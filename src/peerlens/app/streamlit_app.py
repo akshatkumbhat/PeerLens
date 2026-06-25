@@ -38,12 +38,57 @@ def _neighbor_ids(target_unitid: int, set_type: str, limit: int = 8) -> list[int
     return df["unitid"].to_list() if df.height else []
 
 
+def _agent_panel() -> None:
+    """Natural-language agent — correct or silent. Inert without a Gemini key."""
+    from peerlens.config import get_settings
+
+    st.subheader("Ask PeerLens")
+    q = st.text_input(
+        "Ask about admit rate, yield, retention, applicants, or enrollment (2020)",
+        placeholder="e.g. How does UVA's retention compare to its peers?",
+    )
+    if not q:
+        return
+
+    s = get_settings()
+    if not s.gemini_api_key:
+        st.info(
+            "Set `GEMINI_API_KEY` in `.env` to enable the agent. "
+            "Until then, use the comparison tool below."
+        )
+        return
+
+    from peerlens.agent.model import ModelError, get_plan_model
+    from peerlens.agent.pipeline import run_agent
+
+    try:
+        resp = run_agent(_connect(), get_plan_model(s), q, s)
+    except ModelError as e:
+        st.error(str(e))
+        return
+
+    if resp.answered:
+        st.success(resp.answer)
+        st.caption(f"confidence: {resp.agreement:.0%} agreement over {resp.n_samples} samples")
+        with st.expander("the query behind this answer"):
+            st.code(resp.sql, language="sql")
+            st.dataframe(resp.rows, hide_index=True)
+    else:
+        ab = resp.abstention
+        st.warning(f"**Abstained ({ab.reason.value}).** {ab.message}")
+        if ab.options:
+            st.caption("Options: " + ", ".join(ab.options[:6]))
+        st.caption(f"agreement: {resp.agreement:.0%} over {resp.n_samples} samples")
+
+
 def main() -> None:
     st.title("PeerLens")
     st.caption(
         "Grounded higher-ed comparisons — every number is computed by SQL and the "
         "query is always shown. (Phase 1 thin slice: IPEDS 2020, 200 four-year institutions.)"
     )
+
+    _agent_panel()
 
     try:
         insts = _institutions()
