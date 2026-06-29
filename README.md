@@ -1,3 +1,14 @@
+<!-- The block below configures the Hugging Face Space; GitHub renders it as a small note. -->
+---
+title: PeerLens
+emoji: 🎓
+colorFrom: indigo
+colorTo: blue
+sdk: streamlit
+app_file: app.py
+pinned: false
+---
+
 # PeerLens — The Grounded Insights Agent
 
 A natural-language insights agent over public U.S. higher-education data that is

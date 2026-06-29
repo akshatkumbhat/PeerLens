@@ -5,11 +5,14 @@ __pycache__/
 *.py[cod]
 .python-version
 
-# Data — cached pulls and the built warehouse are reproducible, not committed
+# Data — cached pulls and the built warehouse are reproducible, not committed.
+# Exception: the small (~1.5 MB) prebuilt warehouse IS committed so the Hugging
+# Face Space (and anyone cloning) has data instantly without re-ingesting.
 data/raw/*
 data/warehouse/*
 !data/raw/.gitkeep
 !data/warehouse/.gitkeep
+!data/warehouse/peerlens.duckdb
 
 # Tooling
 .pytest_cache/

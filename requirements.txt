@@ -1,0 +1,12 @@
+# Runtime deps for the Hugging Face Space (mirrors pyproject [project.dependencies]).
+# The peerlens package itself is not pip-installed on the Space — app.py puts
+# src/ on the path. The Gemini agent uses httpx (no SDK), so no extra package.
+httpx>=0.27
+polars>=1.0
+duckdb>=1.0
+pydantic>=2.7
+pydantic-settings>=2.3
+python-dotenv>=1.0
+streamlit>=1.36
+scikit-learn>=1.4
+numpy>=1.26
