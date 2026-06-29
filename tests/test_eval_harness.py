@@ -57,6 +57,27 @@ def test_run_eval_flags_wrong_metric_as_incorrect(agent_warehouse) -> None:
     assert recs[0].answer_correct is False
 
 
+def test_run_eval_skips_done_ids_on_resume(agent_warehouse) -> None:
+    """done_ids lets a resumed run skip already-evaluated questions (no re-spend)."""
+    gold = {
+        "answerable": [
+            {"id": "a1", "question": "retention at Alpha University", "institution": "Alpha University", "metric": "retention_rate"},
+        ],
+        "unanswerable": [
+            {"id": "u1", "question": "retention at Nowhere Tech", "expected_reason": "unknown_institution"},
+        ],
+    }
+    routes = {
+        "Alpha University": QueryPlan(intent=Intent.SINGLE, institution="Alpha University", metric="retention_rate"),
+        "Nowhere Tech": QueryPlan(intent=Intent.SINGLE, institution="Nowhere Tech", metric="retention_rate"),
+    }
+    recs = run_eval(
+        agent_warehouse, _ScriptedModel(routes),
+        Settings(agent_samples=3, agent_temperature=0.0), gold, done_ids={"a1"},
+    )
+    assert [r.id for r in recs] == ["u1"]  # a1 skipped, only the unfinished one ran
+
+
 def test_run_eval_preserves_partial_on_api_error(agent_warehouse) -> None:
     """A mid-run ModelError returns the records collected so far, not nothing."""
 

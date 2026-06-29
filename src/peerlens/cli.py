@@ -135,17 +135,25 @@ def _cmd_eval(args: argparse.Namespace) -> int:
         except ModelError as e:
             print(f"Cannot run eval: {e}")
             return 1
+        prior = []
+        done_ids: set[str] = set()
+        if args.resume and records_path.exists():
+            prior = load_records(records_path)
+            done_ids = {r.id for r in prior}
+            print(f"Resuming: {len(prior)} question(s) already done; running the rest.")
         con = db.connect(read_only=True)
         try:
             print(f"Running eval (model={s.gemini_model}, samples={s.agent_samples})…")
-            records = run_eval(con, model, s, limit=args.limit, pause=args.pause)
+            fresh = run_eval(con, model, s, limit=args.limit, pause=args.pause, done_ids=done_ids)
         finally:
             con.close()
+        records = prior + fresh
         if not records:
             print("No records collected (API unavailable?). Nothing written.")
             return 1
         save_records(records, records_path)
-        print(f"Saved {len(records)} records -> {records_path.relative_to(config.REPO_ROOT)}")
+        print(f"Saved {len(records)} records ({len(fresh)} new) -> "
+              f"{records_path.relative_to(config.REPO_ROOT)}")
 
     op = write_report(records, out_dir, s.agent_tau)
     at_default = metrics_at(records, s.agent_tau)
@@ -214,6 +222,7 @@ def main() -> int:
     p_eval.add_argument("--pause", type=float, default=0.0, help="seconds to wait between questions")
     p_eval.add_argument("--limit", type=int, default=None, help="limit questions per set")
     p_eval.add_argument("--from-cache", action="store_true", help="recompute from cached records.json")
+    p_eval.add_argument("--resume", action="store_true", help="skip questions already in records.json, run only the rest")
     p_eval.add_argument("--update-readme", action="store_true", help="write metrics into README markers")
     p_eval.set_defaults(func=_cmd_eval)
 

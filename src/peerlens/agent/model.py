@@ -57,7 +57,14 @@ def _retry_delay(response, default: float = 20.0) -> float:
 
 
 def build_prompt(question: str, linked: LinkedCatalog) -> str:
-    """Schema-linked instruction: extract a grounded query plan as JSON."""
+    """Schema-linked instruction: extract a grounded query plan as JSON.
+
+    The model names the metric and year the question ACTUALLY asks for — mapping
+    to a menu key when the menu covers the concept, but echoing the requested
+    measure/year verbatim when it does not. Out-of-scope requests then reach the
+    resolver, which abstains deterministically (unknown_metric / out_of_scope),
+    instead of being silently laundered into a confident in-scope answer.
+    """
     metrics = ", ".join(m.key for m in linked.metrics)
     return (
         "You translate a question about U.S. higher-education data into a STRICT JSON "
@@ -69,14 +76,21 @@ def build_prompt(question: str, linked: LinkedCatalog) -> str:
         "JSON shape:\n"
         '  {"intent": "single"|"compare",\n'
         '   "institution": "<name as written in the question>",\n'
-        '   "metric": "<one metric key>",\n'
+        '   "metric": "<menu key if the menu covers it, else the requested measure as snake_case>",\n'
         '   "comparison": {"kind": "none"|"peers"|"aspirants"|"explicit",\n'
         '                  "institutions": ["<name>", ...], "k": 10},\n'
-        '   "years": [2020]}\n\n'
-        "Rules: pick exactly one metric key from the menu. Use intent=compare with "
-        "comparison.kind=peers/aspirants for peer/aspirant questions, explicit when the "
-        "question names the comparison institutions, else single with kind=none. Only "
-        "year 2020 is available.\n\n"
+        '   "years": [<year(s) the question asks about; [2020] only if none is named>]}\n\n'
+        "Rules:\n"
+        "- Metric: if the question's measure matches a menu key (e.g. 'acceptance rate' "
+        "-> admit_rate), use that exact key. If it asks for a measure the menu does NOT "
+        "cover (e.g. graduation rate, SAT score, tuition, endowment), output your best "
+        "snake_case name for THAT measure — never substitute a different in-menu metric. "
+        "The system declines what it cannot compute, which is correct behavior.\n"
+        "- Year: use the exact year(s) named in the question, even if data may not exist "
+        "for them; use [2020] only when the question names no year.\n"
+        "- Comparison: intent=compare with kind=peers/aspirants for peer/aspirant "
+        "questions, explicit when the question names the comparison institutions, else "
+        "single with kind=none.\n\n"
         f"Question: {question}\n"
         "JSON:"
     )
@@ -105,13 +119,19 @@ class GeminiPlanModel:
     Requests constrained JSON (``responseMimeType: application/json``) and parses
     it into a ``QueryPlan``; a malformed sample returns None (a dropped vote, not
     a crash), which is exactly what self-consistency expects.
+
+    ``api_key`` may be one key or several (a comma-separated string, or a list).
+    With more than one, calls round-robin across keys to spread load, and a
+    throttled key (429/503) rotates to the next one *before* we ever wait — so a
+    second free-tier key roughly doubles the usable per-minute/daily budget,
+    which is what a full eval run needs.
     """
 
     _BASE = "https://generativelanguage.googleapis.com/v1beta/models"
 
     def __init__(
         self,
-        api_key: str,
+        api_key,
         model: str = "gemini-2.5-flash",
         timeout: float = 30.0,
         client=None,
@@ -119,17 +139,29 @@ class GeminiPlanModel:
         max_retries: int = 4,
         sleep=None,
     ):
-        if not api_key:
+        self._keys = self._parse_keys(api_key)
+        if not self._keys:
             raise ModelError("GEMINI_API_KEY is not set — cannot use the Gemini provider.")
         import time
 
         import httpx
 
-        self._api_key = api_key
+        self._idx = 0
         self._model = model
         self._client = client or httpx.Client(timeout=timeout)
         self._max_retries = max_retries
         self._sleep = sleep or time.sleep
+
+    @staticmethod
+    def _parse_keys(api_key) -> list[str]:
+        """Accept a single key, a comma-separated string, or a list of keys."""
+        raw = api_key if isinstance(api_key, (list, tuple)) else str(api_key or "").split(",")
+        return [k.strip() for k in raw if k and str(k).strip()]
+
+    def _next_key(self) -> str:
+        key = self._keys[self._idx % len(self._keys)]
+        self._idx += 1
+        return key
 
     def propose(
         self, question: str, linked: LinkedCatalog, *, temperature: float
@@ -148,18 +180,24 @@ class GeminiPlanModel:
             },
         }
         resp = None
+        throttled = 0  # consecutive 429/503s; we only wait once every key is hit
         for attempt in range(self._max_retries + 1):
             try:
-                resp = self._client.post(url, headers={"x-goog-api-key": self._api_key}, json=body)
+                resp = self._client.post(
+                    url, headers={"x-goog-api-key": self._next_key()}, json=body
+                )
                 resp.raise_for_status()
                 break
             except httpx.HTTPStatusError as e:
                 status = e.response.status_code
-                # 429/503 are transient (rate limit / overload) — back off and retry.
+                # 429/503 are transient (rate limit / overload). Rotate to the next
+                # key first — that's free — and only sleep once every key has been
+                # throttled this round (a per-minute reset needs ~60s, so a shorter
+                # cap would retry into a still-closed window).
                 if status in (429, 503) and attempt < self._max_retries:
-                    # Honor the server's hint up to 65s — a per-minute quota reset
-                    # needs ~60s, so a shorter cap retries into a still-closed window.
-                    self._sleep(min(_retry_delay(e.response), 65.0))
+                    throttled += 1
+                    if throttled % len(self._keys) == 0:
+                        self._sleep(min(_retry_delay(e.response), 65.0))
                     continue
                 detail = ""
                 try:

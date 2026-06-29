@@ -1,0 +1,192 @@
+[
+  {
+    "id": "a01",
+    "kind": "answerable",
+    "question": "What was the admit rate at the University of California-Los Angeles in 2020?",
+    "agreement": 1.0,
+    "top_kind": "answer",
+    "predicted_reason": null,
+    "answer_correct": true,
+    "expected_reason": null
+  },
+  {
+    "id": "a02",
+    "kind": "answerable",
+    "question": "What is the first-time full-time retention rate at the University of Virginia?",
+    "agreement": 1.0,
+    "top_kind": "answer",
+    "predicted_reason": null,
+    "answer_correct": true,
+    "expected_reason": null
+  },
+  {
+    "id": "a03",
+    "kind": "answerable",
+    "question": "How many applicants did Pennsylvania State University receive?",
+    "agreement": 1.0,
+    "top_kind": "answer",
+    "predicted_reason": null,
+    "answer_correct": true,
+    "expected_reason": null
+  },
+  {
+    "id": "a04",
+    "kind": "answerable",
+    "question": "What was the yield rate at the Georgia Institute of Technology?",
+    "agreement": 0.5,
+    "top_kind": "answer",
+    "predicted_reason": null,
+    "answer_correct": true,
+    "expected_reason": null
+  },
+  {
+    "id": "a05",
+    "kind": "answerable",
+    "question": "What was the retention rate at the University of Florida?",
+    "agreement": 1.0,
+    "top_kind": "answer",
+    "predicted_reason": null,
+    "answer_correct": true,
+    "expected_reason": null
+  },
+  {
+    "id": "a06",
+    "kind": "answerable",
+    "question": "What was the admit rate at the University of North Carolina at Chapel Hill?",
+    "agreement": 1.0,
+    "top_kind": "answer",
+    "predicted_reason": null,
+    "answer_correct": true,
+    "expected_reason": null
+  },
+  {
+    "id": "a07",
+    "kind": "answerable",
+    "question": "How many students enrolled at the University of California-Berkeley?",
+    "agreement": 1.0,
+    "top_kind": "answer",
+    "predicted_reason": null,
+    "answer_correct": true,
+    "expected_reason": null
+  },
+  {
+    "id": "a08",
+    "kind": "answerable",
+    "question": "What was the admit rate at the University of California-San Diego?",
+    "agreement": 1.0,
+    "top_kind": "answer",
+    "predicted_reason": null,
+    "answer_correct": true,
+    "expected_reason": null
+  },
+  {
+    "id": "a09",
+    "kind": "answerable",
+    "question": "What is the retention rate at the University of Maryland-College Park?",
+    "agreement": 1.0,
+    "top_kind": "answer",
+    "predicted_reason": null,
+    "answer_correct": true,
+    "expected_reason": null
+  },
+  {
+    "id": "a10",
+    "kind": "answerable",
+    "question": "How does the University of Virginia's retention rate compare to its peers?",
+    "agreement": 1.0,
+    "top_kind": "answer",
+    "predicted_reason": null,
+    "answer_correct": true,
+    "expected_reason": null
+  },
+  {
+    "id": "a11",
+    "kind": "answerable",
+    "question": "What was the yield rate at the University of Florida?",
+    "agreement": 1.0,
+    "top_kind": "answer",
+    "predicted_reason": null,
+    "answer_correct": true,
+    "expected_reason": null
+  },
+  {
+    "id": "a12",
+    "kind": "answerable",
+    "question": "How many applicants did the University of California-Irvine receive in 2020?",
+    "agreement": 1.0,
+    "top_kind": "answer",
+    "predicted_reason": null,
+    "answer_correct": true,
+    "expected_reason": null
+  },
+  {
+    "id": "u01",
+    "kind": "unanswerable",
+    "question": "What is the retention rate at Hogwarts University?",
+    "agreement": 1.0,
+    "top_kind": "abstain",
+    "predicted_reason": "unknown_institution",
+    "answer_correct": null,
+    "expected_reason": "unknown_institution"
+  },
+  {
+    "id": "u02",
+    "kind": "unanswerable",
+    "question": "What is the admit rate at the University of California?",
+    "agreement": 1.0,
+    "top_kind": "abstain",
+    "predicted_reason": "ambiguous_institution",
+    "answer_correct": null,
+    "expected_reason": "ambiguous_institution"
+  },
+  {
+    "id": "u03",
+    "kind": "unanswerable",
+    "question": "What is the graduation rate at the University of Florida?",
+    "agreement": 1.0,
+    "top_kind": "abstain",
+    "predicted_reason": "unknown_metric",
+    "answer_correct": null,
+    "expected_reason": "out_of_scope"
+  },
+  {
+    "id": "u04",
+    "kind": "unanswerable",
+    "question": "What was the admit rate at the University of Virginia in 2025?",
+    "agreement": 1.0,
+    "top_kind": "abstain",
+    "predicted_reason": "out_of_scope",
+    "answer_correct": null,
+    "expected_reason": "out_of_scope"
+  },
+  {
+    "id": "u05",
+    "kind": "unanswerable",
+    "question": "What is the average SAT score at the University of California-Los Angeles?",
+    "agreement": 1.0,
+    "top_kind": "abstain",
+    "predicted_reason": "unknown_metric",
+    "answer_correct": null,
+    "expected_reason": "out_of_scope"
+  },
+  {
+    "id": "u06",
+    "kind": "unanswerable",
+    "question": "What is the endowment of Pennsylvania State University?",
+    "agreement": 1.0,
+    "top_kind": "abstain",
+    "predicted_reason": "unknown_metric",
+    "answer_correct": null,
+    "expected_reason": "out_of_scope"
+  },
+  {
+    "id": "u07",
+    "kind": "unanswerable",
+    "question": "Tell me a joke about college admissions.",
+    "agreement": 0.5,
+    "top_kind": "abstain",
+    "predicted_reason": "unknown_metric",
+    "answer_correct": null,
+    "expected_reason": "out_of_scope"
+  }
+]

@@ -58,24 +58,31 @@ def run_eval(
     limit: int | None = None,
     pause: float = 0.0,
     on_error: str = "stop",  # "stop" -> return partial; "raise" -> propagate
+    done_ids: set[str] | None = None,
 ) -> list[EvalRecord]:
     """Run the agent over the gold set; return one record per question.
 
     Resilient to API failures: on a ModelError, by default it returns the records
     collected so far (partial progress preserved) rather than losing everything.
-    ``pause`` spaces questions to respect rate limits.
+    ``pause`` spaces questions to respect rate limits. ``done_ids`` skips questions
+    already evaluated (resume after a quota stop without re-spending on them).
     """
     s = settings or get_settings()
     gold = gold or load_gold()
     records: list[EvalRecord] = []
+    done = done_ids or set()
 
     def _consistency(question: str):
         return run_consistency(
             con, model, question, n=s.agent_samples, temperature=s.agent_temperature
         )
 
-    answerable = gold["answerable"][:limit] if limit else gold["answerable"]
-    unanswerable = gold["unanswerable"][:limit] if limit else gold["unanswerable"]
+    def _todo(cases):
+        cases = cases[:limit] if limit else cases
+        return [c for c in cases if c["id"] not in done]
+
+    answerable = _todo(gold["answerable"])
+    unanswerable = _todo(gold["unanswerable"])
 
     try:
         for i, case in enumerate(answerable):
