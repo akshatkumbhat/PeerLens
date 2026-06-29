@@ -188,5 +188,15 @@
     "predicted_reason": "unknown_metric",
     "answer_correct": null,
     "expected_reason": "out_of_scope"
+  },
+  {
+    "id": "u08",
+    "kind": "unanswerable",
+    "question": "What is the tuition at the University of Michigan?",
+    "agreement": 1.0,
+    "top_kind": "abstain",
+    "predicted_reason": "unknown_metric",
+    "answer_correct": null,
+    "expected_reason": "out_of_scope"
   }
 ]
