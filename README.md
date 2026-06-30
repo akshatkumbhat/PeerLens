@@ -119,6 +119,38 @@ the resolver and abstains deterministically. Result:
 A small reminder that the grounding work belongs in deterministic code; the
 model's job is to surface intent faithfully, not to force a fit.
 
+## From PoC to MARK — mapping onto MARKETview's stack
+
+PeerLens is deliberately a thin local slice, but every layer maps onto a production
+stack like MARKETview's — the design choices were made *for* that scale, not just for
+this PoC.
+
+| PeerLens (local PoC) | Production equivalent (MARKETview / Azure) | Why the choice carries over |
+|---|---|---|
+| Ingest: IPEDS + Scorecard via httpx → parquet cache | Azure Data Factory / Databricks ingestion into ADLS + Delta | Idempotent, cached pulls keep everything reproducible; the cache boundary is identical — just orchestrated and bigger |
+| Warehouse: DuckDB star schema (dims / facts / bridge) | Azure SQL / Synapse / Databricks SQL (Delta) | Same dimensional model; DuckDB is the local stand-in, and the read-only query path the agent uses is unchanged |
+| Transforms + data-quality gate (fails the build on a bad number) | dbt / Databricks jobs with tests, wired into CI | "Fail the pipeline on a referential-integrity or range violation" is what keeps a bad number out of an answer — it scales straight into their orchestration |
+| Mahalanobis peer/aspirant sets → `bridge_peer_set` | A scheduled Spark/Databricks feature job materializing the same bridge table | Principled, reproducible comparison sets (the nearest-neighbor idea NCES itself uses on IPEDS) — recompute at full scale |
+| The correct-or-silent agent | **MARK itself** | Schema linking, the validated plan contract, template-first SQL, self-consistency, and programmatic number injection are exactly what an AI insights analyst needs to be trustworthy |
+| Streamlit "answer + confidence + SQL" | MARK's product surface | Presentation only — but "always show the query" is the trust pattern worth keeping |
+| Eval harness in CI (confident-wrong rate, risk-coverage τ-sweep) | A continuous guardrail tracking MARK's confident-wrong rate and operating point | The credibility multiplier: it turns "the demo looked good" into "wrong on under X% of answered questions, abstains on the rest" |
+
+**Schema linking matters *more* at your scale, not less.** Here the schema is tiny, so
+retrieving only the relevant tables/columns per question is easy — but it's built that
+way on purpose, because whole-schema dumping is the failure mode of off-the-shelf
+text-to-SQL (it blows the context window and generalizes poorly). On a large MARKETview
+schema, schema linking plus a plan contract validated against the data catalog is what
+catches an unknown table or metric **deterministically, before any SQL is generated**.
+
+**Why this shape fits MARK.** MARK's core risk is a confident wrong number driving a
+real enrollment or financial-aid decision. This architecture makes that structurally
+hard: every figure is computed by SQL and injected by code (the model never writes a
+number), anything unknown / ambiguous / out-of-scope abstains or asks a clarifying
+question, and self-consistency converts low confidence into an abstention rather than a
+guess. The eval harness then *measures* the residual confident-wrong rate and lets you
+choose the operating point — the contract a firm needs before an AI analyst goes near a
+real decision.
+
 ## Build order
 
 - **Phase 1** ✅ — Ingest one IPEDS year → DuckDB dims + facts → templated comparison
