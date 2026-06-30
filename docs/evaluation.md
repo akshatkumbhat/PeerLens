@@ -14,9 +14,9 @@ the **rate of confident-and-wrong answers**, and it sets the abstention threshol
   or clarification: unknown institution, ambiguous reference, out-of-scope metric
   or year, or non-questions. The system is correct here when it abstains.
 
-Institution phrasings are chosen to resolve under the strict resolver; alias /
-abbreviation resolution (e.g. "UCLA", "Penn State") is documented future work and
-would otherwise show up as honest *over-abstention*.
+Institution phrasings resolve under the resolver, which includes a curated acronym
+map (e.g. "UVA", "UCLA", "Penn State") on top of exact/containment matching, so a
+common abbreviation resolves rather than showing up as honest *over-abstention*.
 
 ## How it runs (model called once per question)
 

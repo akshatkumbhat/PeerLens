@@ -18,9 +18,10 @@ statistics).
 
 **Features** (standardized; `peers/features.py`): admit rate (selectivity),
 log enrollment (size), retention rate, yield rate, sector (public vs private
-nonprofit). Kept compact so S is well-conditioned on ~200 institutions.
-**Extension points**: region, Carnegie class, and **Pell share** (Pell arrives
-with College Scorecard in Phase 4).
+nonprofit), and **Pell share** (College Scorecard) — which joins the distance
+automatically when present and is median-imputed for the few institutions missing
+it. Kept compact so S is well-conditioned on ~200 institutions. **Extension
+points**: region and Carnegie class.
 
 - **Peer set**: the *k* nearest institutions overall (excluding self).
 - **Aspirant set**: the *k* nearest among institutions **one selectivity band

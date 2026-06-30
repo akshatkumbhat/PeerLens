@@ -56,7 +56,20 @@ the thin-slice cohort: four-year (`institution_level=4`), public + private-nonpr
 (`sector ∈ {1,2}`), with a non-zero admissions funnel and present retention,
 ranked by applicants — top ~200. Documented & deterministic.
 
-## College Scorecard API (Phase 4)
+## College Scorecard API (Phase 4) → `fact_socioeconomic`
 
-Free key from https://api.data.gov/signup/ → `.env` `SCORECARD_API_KEY`. Adds
-socio-economic context (Pell share, net price, earnings). Not used in Phase 1.
+Free key from https://api.data.gov/signup/ → `.env` `SCORECARD_API_KEY`
+(`peerlens ingest` pulls it when set). Base:
+`https://api.data.gov/ed/collegescorecard/v1/schools` — paginated JSON keyed by the
+**IPEDS unitid** (the Scorecard `id` field), so it joins `dim_institution` directly.
+
+Fields pulled (`ingest/scorecard.py`) → metrics:
+
+- `latest.cost.avg_net_price.public` / `.private` → **net_price** (coalesced; USD)
+- `latest.aid.pell_grant_rate` → **pell_rate** (fraction in [0, 1])
+- `latest.earnings.10_yrs_after_entry.median` → **median_earnings** (USD)
+
+These become queryable metrics, and Pell share also enters the Mahalanobis peer
+distance. The table is **optional**: with no key the warehouse still builds and these
+metrics abstain (`no_data`) rather than failing. Data-quality checks bound `pell_rate`
+to [0, 1] and sanity-check price / earnings (`quality/checks.py`).

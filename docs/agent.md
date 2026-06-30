@@ -31,10 +31,13 @@ is where an unknown institution or metric is caught — deterministically, befor
 any SQL exists.
 
 - `intent`: `single` | `compare` (trend deferred until multi-year data)
-- `institution`: resolved by normalized exact match, then deterministic
-  containment — which honestly surfaces ambiguity and unknowns (with suggestions)
-- `metric`: one of the catalog keys (admit_rate, yield_rate, retention_rate,
-  applied, enrolled)
+- `institution`: resolved by a curated acronym map (UVA, UCLA, MIT, …) → normalized
+  exact match → deterministic containment — which honestly surfaces ambiguity and
+  unknowns (with suggestions)
+- `metric`: one of the catalog keys — admissions (admit_rate, yield_rate, applied,
+  enrolled), retention (retention_rate), and socio-economic from College Scorecard
+  (net_price, pell_rate, median_earnings). A question naming no measure is set to the
+  literal `unspecified` so the resolver can ask which one.
 - `comparison`: `none` | `peers` | `aspirants` (from `bridge_peer_set`) | `explicit`
 - `years`: validated ⊆ available (currently {2020})
 
@@ -51,7 +54,7 @@ samples in the largest group.
 | # | Condition | Behavior |
 |---|---|---|
 | 1 | unknown institution / metric | abstain, list closest matches / the metric menu |
-| 2 | ambiguous institution | clarify, offer the matches |
+| 2 | ambiguous institution, or no metric named | clarify — offer the matches, or ask which measure |
 | 3 | agreement < τ (**0.6**) | abstain: uncertain, offer to narrow |
 | 4 | empty / suppressed result | "no data," never invent |
 | 5 | out of scope (year/metric/unparseable) | decline, state what's answerable |
@@ -72,7 +75,7 @@ still receive numbers only as code-filled slots; the guarantee is the injection.
 called over its REST API with httpx (no SDK, no extra deps); set `GEMINI_API_KEY`.
 Adding Ollama or Claude is one new class implementing the `PlanModel` protocol —
 the pipeline is provider-agnostic. `FakePlanModel` makes the whole agent testable
-offline (36 tests, no network, no key).
+offline (61 tests, no network, no key).
 
 ## Schema linking at scale
 

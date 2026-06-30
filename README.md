@@ -6,11 +6,15 @@ colorTo: blue
 sdk: streamlit
 app_file: app.py
 pinned: false
+license: mit
 ---
 
 # PeerLens — The Grounded Insights Agent
 
-[![🤗 Hugging Face — Live Demo](https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Live%20Demo-blue)](https://huggingface.co/spaces/AkshAt3114/peerlens)
+[![🤗 Live Demo](https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Live%20Demo-blue)](https://huggingface.co/spaces/AkshAt3114/peerlens)
+[![CI](https://github.com/akshatkumbhat/PeerLens/actions/workflows/ci.yml/badge.svg)](https://github.com/akshatkumbhat/PeerLens/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/)
 
 A natural-language insights agent over public U.S. higher-education data that is
 **correct or silent, never confidently wrong.** Every number in an answer is
@@ -21,6 +25,12 @@ guessing.**
 
 The headline metric is not accuracy alone — it is the rate of *confident-and-wrong*
 answers, driven toward zero.
+
+It answers questions about **admissions** (admit / yield rates, applicants, enrollment),
+**retention**, and — via College Scorecard — **net price, Pell share, and median
+earnings**, for ~200 four-year U.S. institutions and their peer sets (IPEDS 2020).
+Ask in plain English (acronyms like "UVA"/"UCLA" work); under-specified questions get
+a clarifying question, out-of-scope ones get an honest abstention.
 
 > Status: **Phases 1–4 complete.** Live eval (see Results): **0% confident-wrong,
 > 100% abstention recall** on a 20-question gold set (`gemini-2.5-flash`). The
@@ -172,7 +182,7 @@ real decision.
 uv sync                 # create venv + install deps (Python 3.11+)
 cp .env.example .env    # IPEDS needs none; set GEMINI_API_KEY to use the agent
 make pipeline           # ingest -> build (with DQ gate) -> Mahalanobis peers
-make test               # 51 tests (agent fully tested offline, no key needed)
+make test               # 61 tests (agent fully tested offline, no key needed)
 
 # the agent (needs GEMINI_API_KEY; free key at https://aistudio.google.com/apikey)
 uv run peerlens ask "How does UVA's retention compare to its peers?"
@@ -181,6 +191,12 @@ make app                # Streamlit page with the Ask panel + comparison tool
 
 ## Tech stack
 
-Python 3.11+, httpx, polars, DuckDB, scikit-learn, Pydantic v2, FastAPI,
-LangGraph + LangChain, Streamlit, pytest, GitHub Actions. Provider-swappable model
-layer (Gemini, local Ollama, Claude).
+Python 3.11+ · httpx · Polars · DuckDB · scikit-learn · Pydantic v2 · Streamlit ·
+pytest · ruff · GitHub Actions CI · uv.
+
+A few deliberate choices: the Gemini agent calls the REST API directly with httpx
+(no SDK, no extra deps); the pipeline is a plain, **framework-free** orchestrator
+whose stages map 1:1 onto a LangGraph graph (the documented next step); and the model
+layer is a small `PlanModel` protocol — **Gemini is implemented, Ollama / Claude are
+drop-in**. `FakePlanModel` makes the whole agent testable offline, so the 61-test
+suite is hermetic (no network, no API key) and runs in CI on every push.
