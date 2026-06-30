@@ -29,27 +29,40 @@ answers, driven toward zero.
 > [docs/methodology.md](docs/methodology.md), and
 > [docs/evaluation.md](docs/evaluation.md).
 
-## Architecture (target)
+## Architecture
 
+```mermaid
+flowchart TD
+    Q(["Natural-language question"]) --> SL["Schema linking<br/>relevant tables + metrics"]
+    SL --> PM["Gemini plan model<br/>N samples · nonzero temp"]
+    PM --> R{"Deterministic resolver<br/>acronyms · catalog · year"}
+    R -->|"unknown · ambiguous<br/>out-of-scope · unspecified"| AB[["Abstain / clarify"]]
+    R -->|grounded| EX["Template SQL · execute<br/>read-only DuckDB"]
+    EX --> SC{"Self-consistency<br/>group by result → agreement"}
+    SC -->|"low agreement"| AB
+    SC -->|"agreement ≥ τ"| INJ["Programmatic number injection<br/>model writes prose · code fills figures"]
+    INJ --> ANS[/"Answer + confidence + the SQL behind it"/]
+    AB --> ANS
+    ANS --> UI["Streamlit page"]
+
+    subgraph data["Data pipeline — cached, reproducible"]
+        API["Urban Institute<br/>IPEDS API"] -->|httpx| PQ[("parquet cache")]
+        SCD["College Scorecard<br/>(planned)"] -.-> PQ
+        PQ --> WH[("DuckDB star schema<br/>dim_institution · dim_year<br/>fact_admissions_funnel · fact_retention")]
+        WH --> DQ{{"Data-quality gate<br/>fails build on violations"}}
+        WH --> MA["Mahalanobis k-NN<br/>peers + aspirants"] --> BP[("bridge_peer_set")]
+    end
+
+    WH -. queried .-> EX
+    BP -. peer set .-> EX
 ```
-Urban Institute IPEDS API ─┐
-College Scorecard API ──────┼─▶ ingest (httpx + parquet cache)
-                            │
-                            ▼
-                 DuckDB star schema  ──▶  data-quality gate (fails build on violations)
-                 dim_institution / dim_year
-                 fact_admissions_funnel / fact_retention
-                 bridge_peer_set (Mahalanobis k-NN peers + aspirants)
-                            │
-                            ▼
-        Agent pipeline (correct-or-silent)
-        plan contract (Pydantic) → schema linking → template-first SQL
-        → execution-guided correction → N-sample self-consistency
-        → abstention decision → programmatic number injection
-                            │
-                            ▼
-                 Streamlit: answer + confidence + the query behind it
-```
+
+Every answer is either **grounded** — a real number computed by SQL, with the
+query shown — or an **abstention / clarifying question**; the model never emits a
+figure of its own. The evaluation harness (see [Results](#results)) runs this same
+agent over a gold set to measure the confident-wrong rate. Deep dives:
+[docs/agent.md](docs/agent.md), [docs/methodology.md](docs/methodology.md),
+[docs/evaluation.md](docs/evaluation.md).
 
 ## Design notes (research-grounded)
 
