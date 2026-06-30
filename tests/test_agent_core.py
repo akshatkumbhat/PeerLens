@@ -42,6 +42,19 @@ def test_resolve_ambiguous_institution(agent_warehouse) -> None:
     assert len(out.options) > 1
 
 
+def test_match_expands_known_acronyms() -> None:
+    # acronym expansion is warehouse-agnostic — test _match against a tiny index
+    names = ["University of Virginia-Main Campus", "Massachusetts Institute of Technology"]
+    index = [
+        resolve._Inst(i, n, resolve._normalize(n), frozenset(resolve._normalize(n).split()))
+        for i, n in enumerate(names)
+    ]
+    assert [m.unitid for m in resolve._match(index, "UVA")] == [0]
+    assert [m.unitid for m in resolve._match(index, "MIT")] == [1]
+    assert resolve._match(index, "University of Virginia")  # full name still resolves
+    assert resolve._match(index, "Nowhere Tech") == []      # unknown -> no match
+
+
 def test_resolve_unknown_metric(agent_warehouse) -> None:
     out = resolve.resolve_plan(agent_warehouse, _plan(metric="graduation_rate"))
     assert isinstance(out, Abstention)

@@ -27,6 +27,45 @@ def _normalize(s: str) -> str:
     return re.sub(r"\s+", " ", re.sub(r"[^a-z0-9]+", " ", s.lower())).strip()
 
 
+# Acronyms / short names people actually type, mapped to the canonical institution
+# name in the IPEDS cohort. Each was validated to resolve 1:1 against the warehouse.
+# Keyed and valued through _normalize at import, so a typed acronym becomes an
+# exact-name hit in _match. Irregular ones (UVA, UCLA, MIT, NYU…) can't be derived
+# by initials, so a curated map is the reliable approach for a small fixed cohort.
+_ACRONYMS_RAW = {
+    "uva": "University of Virginia-Main Campus",
+    "vcu": "Virginia Commonwealth University",
+    "virginia tech": "Virginia Polytechnic Institute and State University",
+    "vt": "Virginia Polytechnic Institute and State University",
+    "wvu": "West Virginia University",
+    "mit": "Massachusetts Institute of Technology",
+    "nyu": "New York University",
+    "usc": "University of Southern California",
+    "unc": "University of North Carolina at Chapel Hill",
+    "umich": "University of Michigan-Ann Arbor",
+    "penn": "University of Pennsylvania",
+    "upenn": "University of Pennsylvania",
+    "penn state": "The Pennsylvania State University",
+    "umd": "University of Maryland-College Park",
+    "uga": "University of Georgia",
+    "georgia tech": "Georgia Institute of Technology-Main Campus",
+    "gt": "Georgia Institute of Technology-Main Campus",
+    "gwu": "George Washington University",
+    "wustl": "Washington University in St Louis",
+    "uw madison": "University of Wisconsin-Madison",
+    "umn": "University of Minnesota-Twin Cities",
+    "ucla": "University of California-Los Angeles",
+    "ucb": "University of California-Berkeley",
+    "uc berkeley": "University of California-Berkeley",
+    "cal": "University of California-Berkeley",
+    "uf": "University of Florida",
+    "ut austin": "The University of Texas at Austin",
+    "osu": "Ohio State University-Main Campus",
+    "msu": "Michigan State University",
+}
+_ALIASES = {_normalize(k): _normalize(v) for k, v in _ACRONYMS_RAW.items()}
+
+
 @dataclass
 class _Inst:
     unitid: int
@@ -48,6 +87,7 @@ def _match(index: list[_Inst], query: str) -> list[_Inst]:
     nq = _normalize(query)
     if not nq:
         return []
+    nq = _ALIASES.get(nq, nq)  # expand a known acronym (UVA, UCLA, MIT, …) to its name
     exact = [i for i in index if i.norm == nq]
     if exact:
         return exact
