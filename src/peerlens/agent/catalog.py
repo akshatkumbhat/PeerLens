@@ -23,12 +23,26 @@ class MetricSpec:
     label: str
     table: str
     column: str
-    is_rate: bool
+    unit: str  # "rate" (0-1, shown as %), "usd" (dollars), or "count"
+
+    @property
+    def is_rate(self) -> bool:
+        return self.unit == "rate"
+
+
+_RATE_METRICS = {"admit_rate", "yield_rate", "retention_rate", "pell_rate"}
+_USD_METRICS = {"net_price", "median_earnings"}
+
+
+def _unit(key: str) -> str:
+    if key in _RATE_METRICS:
+        return "rate"
+    return "usd" if key in _USD_METRICS else "count"
 
 
 # Built from the warehouse query layer so the catalog can't drift from the SQL.
 METRICS: dict[str, MetricSpec] = {
-    key: MetricSpec(key, label, table, column, key in {"admit_rate", "yield_rate", "retention_rate"})
+    key: MetricSpec(key, label, table, column, _unit(key))
     for key, (table, column, label, _higher) in queries.METRICS.items()
 }
 
@@ -39,6 +53,9 @@ _SYNONYMS: list[tuple[tuple[str, ...], str]] = [
     (("yield", "matriculat"), "yield_rate"),
     (("applicant", "application", "applied", "number of app"), "applied"),
     (("enroll", "enrolled", "class size", "freshman class"), "enrolled"),
+    (("net price", "net cost", "cost to attend", "out of pocket", "how much does it cost"), "net_price"),
+    (("pell", "low income", "low-income"), "pell_rate"),
+    (("earnings", "salary", "earn after", "median earnings", "graduates earn", "income after"), "median_earnings"),
 ]
 
 

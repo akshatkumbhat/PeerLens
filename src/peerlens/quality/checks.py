@@ -99,6 +99,32 @@ CHECKS: tuple[Check, ...] = (
         ") t WHERE prev IS NOT NULL AND ABS(retention_rate - prev) > 0.5",
         detail="year-over-year retention change should be within 0.5",
     ),
+    # Socio-economic augmentation (College Scorecard). Empty table -> 0 violations,
+    # so these are no-ops until the Scorecard pull has populated it.
+    Check(
+        "pell_rate_bounded",
+        "SELECT COUNT(*) FROM fact_socioeconomic "
+        "WHERE pell_rate IS NOT NULL AND (pell_rate < 0 OR pell_rate > 1)",
+        detail="pell_rate must be in [0, 1]",
+    ),
+    Check(
+        "net_price_sane",
+        "SELECT COUNT(*) FROM fact_socioeconomic "
+        "WHERE net_price IS NOT NULL AND (net_price < 0 OR net_price > 200000)",
+        detail="net_price must be a non-negative, plausible dollar amount",
+    ),
+    Check(
+        "median_earnings_nonneg",
+        "SELECT COUNT(*) FROM fact_socioeconomic "
+        "WHERE median_earnings IS NOT NULL AND median_earnings < 0",
+        detail="median_earnings must be non-negative",
+    ),
+    Check(
+        "socioeconomic_referential_integrity",
+        "SELECT COUNT(*) FROM fact_socioeconomic f "
+        "LEFT JOIN dim_institution d USING (unitid) WHERE d.unitid IS NULL",
+        detail="every fact_socioeconomic.unitid must exist in dim_institution",
+    ),
 )
 
 

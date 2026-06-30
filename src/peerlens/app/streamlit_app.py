@@ -188,8 +188,13 @@ def main() -> None:
 def _fmt(value: float | None, metric_key: str) -> str:
     if value is None:
         return "—"
-    if metric_key in {"admit_rate", "yield_rate", "retention_rate"}:
+    from peerlens.agent.catalog import METRICS
+
+    unit = METRICS[metric_key].unit if metric_key in METRICS else "count"
+    if unit == "rate":
         return f"{value:.1%}"
+    if unit == "usd":
+        return f"${value:,.0f}"
     return f"{value:,.0f}"
 
 

@@ -20,6 +20,10 @@ METRICS: dict[str, tuple[str, str, str, bool]] = {
     "retention_rate": ("fact_retention", "retention_rate", "Retention rate (first-time, full-time)", True),
     "applied": ("fact_admissions_funnel", "number_applied", "Applicants", True),
     "enrolled": ("fact_admissions_funnel", "number_enrolled_total", "Enrolled (total)", True),
+    # Socio-economic context from College Scorecard (Phase 4).
+    "net_price": ("fact_socioeconomic", "net_price", "Average net price", False),
+    "pell_rate": ("fact_socioeconomic", "pell_rate", "Pell grant share", True),
+    "median_earnings": ("fact_socioeconomic", "median_earnings", "Median earnings (10 yrs)", True),
 }
 
 

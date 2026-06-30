@@ -22,7 +22,7 @@ from pathlib import Path
 import duckdb
 
 from peerlens import config
-from peerlens.ingest import urban
+from peerlens.ingest import scorecard, urban
 
 COHORT_SIZE = 200
 FOUR_YEAR_LEVEL = 4
@@ -180,6 +180,32 @@ def build_warehouse(
             """
         )
 
+        # Socio-economic augmentation (College Scorecard). Built from the cached
+        # pull when present; otherwise an empty table so the schema and metrics
+        # always exist (querying them then abstains with no_data rather than failing).
+        sc_pq = scorecard.cache_path(raw_dir)
+        if Path(sc_pq).exists():
+            con.execute("CREATE OR REPLACE TABLE _stg_scorecard AS SELECT * FROM read_parquet(?)", [str(sc_pq)])
+            con.execute(
+                f"""
+                CREATE OR REPLACE TABLE fact_socioeconomic AS
+                SELECT s.unitid, {year} AS year, s.net_price, s.pell_rate, s.median_earnings
+                FROM _stg_scorecard s JOIN _cohort co USING (unitid)
+                """
+            )
+            con.execute("DROP TABLE IF EXISTS _stg_scorecard")
+        else:
+            con.execute(
+                f"""
+                CREATE OR REPLACE TABLE fact_socioeconomic AS
+                SELECT unitid, {year} AS year,
+                       CAST(NULL AS DOUBLE) AS net_price,
+                       CAST(NULL AS DOUBLE) AS pell_rate,
+                       CAST(NULL AS DOUBLE) AS median_earnings
+                FROM _cohort WHERE FALSE
+                """
+            )
+
         # Drop staging/intermediate tables.
         for t in ("_stg_directory", "_stg_admissions", "_stg_retention",
                   "_cand_institution", "_adm_total", "_ret_ft", "_cohort"):
@@ -191,7 +217,8 @@ def build_warehouse(
 
         assert_quality(con)
 
-        tables = ["dim_year", "dim_institution", "fact_admissions_funnel", "fact_retention"]
+        tables = ["dim_year", "dim_institution", "fact_admissions_funnel",
+                  "fact_retention", "fact_socioeconomic"]
         counts = {t: con.execute(f"SELECT COUNT(*) FROM {t}").fetchone()[0] for t in tables}
         return counts
     finally:

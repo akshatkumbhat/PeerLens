@@ -13,6 +13,7 @@ def _clean_warehouse() -> duckdb.DuckDBPyConnection:
     con.execute("CREATE TABLE dim_institution AS SELECT * FROM (VALUES (1,'A',1),(2,'B',2)) t(unitid,inst_name,sector)")
     con.execute("CREATE TABLE fact_admissions_funnel AS SELECT * FROM (VALUES (1,2020,0.3,0.4),(2,2020,0.5,0.6)) t(unitid,year,admit_rate,yield_rate)")
     con.execute("CREATE TABLE fact_retention AS SELECT * FROM (VALUES (1,2020,0.92),(2,2020,0.85)) t(unitid,year,retention_rate)")
+    con.execute("CREATE TABLE fact_socioeconomic AS SELECT * FROM (VALUES (1,2020,15000.0,0.20,60000.0),(2,2020,22000.0,0.15,72000.0)) t(unitid,year,net_price,pell_rate,median_earnings)")
     return con
 
 

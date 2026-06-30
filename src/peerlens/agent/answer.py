@@ -18,7 +18,11 @@ def _fmt(value: float | None, metric: str) -> str:
     if value is None:
         return "no data"
     spec = catalog.METRICS[metric]
-    return f"{value:.1%}" if spec.is_rate else f"{value:,.0f}"
+    if spec.unit == "rate":
+        return f"{value:.1%}"
+    if spec.unit == "usd":
+        return f"${value:,.0f}"
+    return f"{value:,.0f}"
 
 
 def render_answer(plan: ResolvedPlan, execution: Execution) -> str:

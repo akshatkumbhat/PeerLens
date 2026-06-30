@@ -75,3 +75,30 @@ def agent_warehouse(tmp_path):
     con = duckdb.connect(str(db), read_only=True)
     yield con
     con.close()
+
+
+def _seed_scorecard(raw_dir, year=2020) -> None:
+    from peerlens.ingest import scorecard
+    pl.DataFrame(
+        {
+            "unitid": [1, 2, 3, 4, 5, 6],
+            "net_price": [12000.0, 15000.0, 18000.0, 21000.0, 24000.0, 27000.0],
+            "pell_rate": [0.30, 0.26, 0.22, 0.18, 0.14, 0.10],
+            "median_earnings": [70000.0, 66000.0, 62000.0, 58000.0, 54000.0, 50000.0],
+        }
+    ).write_parquet(scorecard.cache_path(raw_dir))
+
+
+@pytest.fixture
+def socio_warehouse(tmp_path):
+    """Like agent_warehouse, but with College Scorecard socio-economic data."""
+    raw = tmp_path / "raw"
+    raw.mkdir()
+    _seed_six(raw)
+    _seed_scorecard(raw)
+    db = tmp_path / "wh.duckdb"
+    build_warehouse(year=2020, raw_dir=raw, db_path=db, cohort_size=200)
+    build_peer_sets(db_path=db, k=3, n_bands=3)
+    con = duckdb.connect(str(db), read_only=True)
+    yield con
+    con.close()

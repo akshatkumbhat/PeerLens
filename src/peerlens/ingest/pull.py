@@ -41,3 +41,19 @@ def pull_phase1(
         out = urban.pull_to_parquet(topic, year, raw_dir, overwrite=overwrite)
         paths[topic] = out
     return paths
+
+
+def pull_scorecard(raw_dir: Path | None = None, *, overwrite: bool = False) -> Path | None:
+    """Cache the College Scorecard socio-economic fields (Phase 4).
+
+    No-op (returns None) when ``SCORECARD_API_KEY`` is unset, so the keyless
+    IPEDS pipeline still runs end to end without it.
+    """
+    s = config.get_settings()
+    if not s.scorecard_api_key:
+        return None
+    raw_dir = raw_dir or config.RAW_DIR
+    raw_dir.mkdir(parents=True, exist_ok=True)
+    from peerlens.ingest import scorecard
+
+    return scorecard.pull_to_parquet(raw_dir, s.scorecard_api_key, overwrite=overwrite)

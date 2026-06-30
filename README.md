@@ -47,8 +47,8 @@ flowchart TD
 
     subgraph data["Data pipeline — cached, reproducible"]
         API["Urban Institute<br/>IPEDS API"] -->|httpx| PQ[("parquet cache")]
-        SCD["College Scorecard<br/>(planned)"] -.-> PQ
-        PQ --> WH[("DuckDB star schema<br/>dim_institution · dim_year<br/>fact_admissions_funnel · fact_retention")]
+        SCD["College Scorecard API<br/>(api.data.gov)"] -->|httpx| PQ
+        PQ --> WH[("DuckDB star schema<br/>dim_institution · dim_year · fact_admissions_funnel<br/>fact_retention · fact_socioeconomic")]
         WH --> DQ{{"Data-quality gate<br/>fails build on violations"}}
         WH --> MA["Mahalanobis k-NN<br/>peers + aspirants"] --> BP[("bridge_peer_set")]
     end
@@ -163,7 +163,8 @@ real decision.
 - **Phase 4** ✅ — Evaluation harness, metrics, risk-coverage sweep + operating-point
   picker, and CI ([docs/evaluation.md](docs/evaluation.md)). Live numbers in the
   Results section above (`peerlens eval`); **[live demo on HF Spaces](https://huggingface.co/spaces/AkshAt3114/peerlens)**.
-  Remaining: Scorecard/Pell augmentation, architecture diagram, MARKETview-stack mapping.
+  College Scorecard augmentation adds net price, Pell share, and median earnings as
+  queryable metrics and a Pell peer-feature (set `SCORECARD_API_KEY` to ingest).
 
 ## Setup
 

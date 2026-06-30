@@ -13,15 +13,22 @@ from peerlens import config
 
 
 def _cmd_ingest(args: argparse.Namespace) -> int:
-    from peerlens.ingest.pull import pull_phase1
+    import polars as pl
+
+    from peerlens.ingest.pull import pull_phase1, pull_scorecard
 
     paths = pull_phase1(year=args.year, overwrite=args.overwrite)
     print(f"Ingested IPEDS year {args.year or config.get_settings().ipeds_year}:")
     for topic, path in paths.items():
-        import polars as pl
-
         n = pl.read_parquet(path).height
         print(f"  {topic:24} {n:>7,} rows  ->  {path.relative_to(config.REPO_ROOT)}")
+
+    sc_path = pull_scorecard(overwrite=args.overwrite)
+    if sc_path is not None:
+        n = pl.read_parquet(sc_path).height
+        print(f"  {'scorecard socio-econ':24} {n:>7,} rows  ->  {sc_path.relative_to(config.REPO_ROOT)}")
+    else:
+        print("  scorecard             skipped (set SCORECARD_API_KEY for net price / Pell / earnings)")
     return 0
 
 
