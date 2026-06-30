@@ -61,6 +61,7 @@ class AbstainReason(str, Enum):
     UNKNOWN_INSTITUTION = "unknown_institution"
     AMBIGUOUS_INSTITUTION = "ambiguous_institution"
     UNKNOWN_METRIC = "unknown_metric"
+    UNSPECIFIED_METRIC = "unspecified_metric"  # question names no measure — ask which
     OUT_OF_SCOPE = "out_of_scope"
     NO_DATA = "no_data"
     LOW_AGREEMENT = "low_agreement"

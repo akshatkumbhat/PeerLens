@@ -1,4 +1,3 @@
-<!-- The block below configures the Hugging Face Space; GitHub renders it as a small note. -->
 ---
 title: PeerLens
 emoji: 🎓
@@ -10,6 +9,8 @@ pinned: false
 ---
 
 # PeerLens — The Grounded Insights Agent
+
+[![🤗 Hugging Face — Live Demo](https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Live%20Demo-blue)](https://huggingface.co/spaces/AkshAt3114/peerlens)
 
 A natural-language insights agent over public U.S. higher-education data that is
 **correct or silent, never confidently wrong.** Every number in an answer is
@@ -116,8 +117,8 @@ model's job is to surface intent faithfully, not to force a fit.
   programmatic number injection. Gemini provider (REST); fully tested offline.
 - **Phase 4** ✅ — Evaluation harness, metrics, risk-coverage sweep + operating-point
   picker, and CI ([docs/evaluation.md](docs/evaluation.md)). Live numbers in the
-  Results section above (`peerlens eval`). Remaining: Scorecard/Pell augmentation,
-  HF Spaces demo, architecture diagram, MARKETview-stack mapping.
+  Results section above (`peerlens eval`); **[live demo on HF Spaces](https://huggingface.co/spaces/AkshAt3114/peerlens)**.
+  Remaining: Scorecard/Pell augmentation, architecture diagram, MARKETview-stack mapping.
 
 ## Setup
 

@@ -81,6 +81,16 @@ def resolve_plan(con: duckdb.DuckDBPyConnection, plan: QueryPlan) -> ResolvedPla
     """Ground a plan against the warehouse, or abstain with a precise reason."""
     index = _load_index(con)
 
+    # 0) did the question name a measure at all? If not, clarify rather than guess
+    # (distinct from an unknown metric, which we can name and decline precisely).
+    if plan.metric.strip().lower() in {"", "unspecified", "unspecified_metric", "none"}:
+        return Abstention(
+            AbstainReason.UNSPECIFIED_METRIC,
+            "Which measure would you like — admit rate, yield rate, retention rate, "
+            "applicants, or enrollment?",
+            options=list(catalog.METRICS),
+        )
+
     # 1) metric in catalog?
     if plan.metric not in catalog.METRICS:
         return Abstention(

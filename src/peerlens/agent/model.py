@@ -85,6 +85,8 @@ def build_prompt(question: str, linked: LinkedCatalog) -> str:
         "-> admit_rate), use that exact key. If it asks for a measure the menu does NOT "
         "cover (e.g. graduation rate, SAT score, tuition, endowment), output your best "
         "snake_case name for THAT measure — never substitute a different in-menu metric. "
+        "If the question names NO measure at all (e.g. 'how does X compare to its peers?'), "
+        "set metric to the literal \"unspecified\" so the system can ask which one. "
         "The system declines what it cannot compute, which is correct behavior.\n"
         "- Year: use the exact year(s) named in the question, even if data may not exist "
         "for them; use [2020] only when the question names no year.\n"

@@ -48,6 +48,14 @@ def test_resolve_unknown_metric(agent_warehouse) -> None:
     assert out.reason == AbstainReason.UNKNOWN_METRIC
 
 
+def test_resolve_unspecified_metric_asks_which(agent_warehouse) -> None:
+    # question named no measure -> clarify (ask which), not a flat unknown_metric
+    out = resolve.resolve_plan(agent_warehouse, _plan(metric="unspecified"))
+    assert isinstance(out, Abstention)
+    assert out.reason == AbstainReason.UNSPECIFIED_METRIC
+    assert out.options  # offers the metric menu to pick from
+
+
 def test_resolve_out_of_scope_year(agent_warehouse) -> None:
     out = resolve.resolve_plan(agent_warehouse, _plan(years=[2019]))
     assert isinstance(out, Abstention)

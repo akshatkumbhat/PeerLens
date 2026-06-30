@@ -74,11 +74,20 @@ def _agent_panel() -> None:
             st.code(resp.sql, language="sql")
             st.dataframe(resp.rows, hide_index=True)
     else:
+        from peerlens.agent.plan import AbstainReason
+
         ab = resp.abstention
-        st.warning(f"**Abstained ({ab.reason.value}).** {ab.message}")
-        if ab.options:
-            st.caption("Options: " + ", ".join(ab.options[:6]))
-        st.caption(f"agreement: {resp.agreement:.0%} over {resp.n_samples} samples")
+        clarify = {AbstainReason.UNSPECIFIED_METRIC, AbstainReason.AMBIGUOUS_INSTITUTION}
+        if ab.reason in clarify:
+            # A question we need answered, not a refusal — surface it as such.
+            st.info(f"🤔 {ab.message}")
+            if ab.options:
+                st.caption("Options: " + ", ".join(ab.options[:6]))
+        else:
+            st.warning(f"**Can't answer that ({ab.reason.value}).** {ab.message}")
+            if ab.options:
+                st.caption("Options: " + ", ".join(ab.options[:6]))
+            st.caption(f"agreement: {resp.agreement:.0%} over {resp.n_samples} samples")
 
 
 def main() -> None:
