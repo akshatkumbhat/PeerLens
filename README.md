@@ -43,28 +43,28 @@ a clarifying question, out-of-scope ones get an honest abstention.
 
 ```mermaid
 flowchart TD
-    Q(["Natural-language question"]) --> SL["Schema linking<br/>relevant tables + metrics"]
-    SL --> PM["Gemini plan model<br/>N samples · nonzero temp"]
-    PM --> R{"Deterministic resolver<br/>acronyms · catalog · year"}
-    R -->|"unknown · ambiguous<br/>out-of-scope · unspecified"| AB[["Abstain / clarify"]]
-    R -->|grounded| EX["Template SQL · execute<br/>read-only DuckDB"]
-    EX --> SC{"Self-consistency<br/>group by result → agreement"}
+    Q["Natural-language question"] --> SL["Schema linking:<br/>relevant tables and metrics"]
+    SL --> PM["Gemini plan model<br/>N samples, nonzero temperature"]
+    PM --> R{"Deterministic resolver:<br/>acronyms, catalog, year"}
+    R -->|"unknown / ambiguous /<br/>out-of-scope / unspecified"| AB["Abstain or clarify"]
+    R -->|grounded| EX["Template SQL, executed<br/>read-only DuckDB"]
+    EX --> SC{"Self-consistency:<br/>group by result"}
     SC -->|"low agreement"| AB
-    SC -->|"agreement ≥ τ"| INJ["Programmatic number injection<br/>model writes prose · code fills figures"]
-    INJ --> ANS[/"Answer + confidence + the SQL behind it"/]
+    SC -->|"high agreement"| INJ["Programmatic number injection:<br/>model writes prose, code fills figures"]
+    INJ --> ANS["Answer + confidence + the SQL"]
     AB --> ANS
     ANS --> UI["Streamlit page"]
 
-    subgraph data["Data pipeline — cached, reproducible"]
-        API["Urban Institute<br/>IPEDS API"] -->|httpx| PQ[("parquet cache")]
-        SCD["College Scorecard API<br/>(api.data.gov)"] -->|httpx| PQ
-        PQ --> WH[("DuckDB star schema<br/>dim_institution · dim_year · fact_admissions_funnel<br/>fact_retention · fact_socioeconomic")]
-        WH --> DQ{{"Data-quality gate<br/>fails build on violations"}}
-        WH --> MA["Mahalanobis k-NN<br/>peers + aspirants"] --> BP[("bridge_peer_set")]
+    subgraph data["Data pipeline: cached, reproducible"]
+        API["Urban Institute IPEDS API"] -->|httpx| PQ["parquet cache"]
+        SCD["College Scorecard API"] -->|httpx| PQ
+        PQ --> WH["DuckDB star schema:<br/>dims, facts, fact_socioeconomic"]
+        WH --> DQ["Data-quality gate:<br/>fails build on violations"]
+        WH --> MA["Mahalanobis k-NN:<br/>peers + aspirants"] --> BP["bridge_peer_set"]
     end
 
-    WH -. queried .-> EX
-    BP -. peer set .-> EX
+    WH -.->|queried| EX
+    BP -.->|peer set| EX
 ```
 
 Every answer is either **grounded** — a real number computed by SQL, with the
